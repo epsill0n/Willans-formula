@@ -1,4 +1,4 @@
-<h1>Implementation of Willan's formula</h1>
+<h1>Implementation of Willans' formula</h1>
 
 In 1964, Willans gave the formula:
 
