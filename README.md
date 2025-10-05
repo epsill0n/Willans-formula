@@ -2,7 +2,15 @@
 
 In 1964, Willans gave the formula:
 
-$\displaystyle p_n = 1 + \sum_{i=1}^{2^n} \left\lfloor \left(\frac{n}{\sum_{j=1}^{i} \left\lfloor \left(\cos \frac{(j-1)! + 1}{j} \pi \right)^2 \right\rfloor}\right)^{1/n} \right\rfloor$
+<p align="center">
+
+$$
+\Large
+\displaystyle p_n = 1 + \sum_{i=1}^{2^n} \left\lfloor \left(\frac{n}{\sum_{j=1}^{i} \left\lfloor \left(\cos \frac{(j-1)! + 1}{j} \pi \right)^2 \right\rfloor}\right)^{1/n} \right\rfloor
+
+$$
+
+</p>
 
 for generating the $n$-th prime number.
 
@@ -22,9 +30,10 @@ reads the number $n$ on input and outputs the $n$-th prime number;
 reads the number $n$ on input and outputs all the prime numbers until the $n$-th prime number.
 
 <h4>C++ (/cpp/)</h4>
+
 This directory is a `C++` implementation of the formula.
 
-$Soon \ to \  be \ published.$
+`Soon to be released.`
 
 <h3>Subdirectories</h3>
 <h4>Sequential computation (/seq/)</h4>
@@ -35,4 +44,4 @@ This subdirectory contains a sequential implementation of the computation. Namel
 
 This directory contains a concurrent implementation of the computation. Namely, some `for` loop calculations are computed in parallel.
 
-$Soon \ to \  be \ published.$
+`Soon to be released.`
