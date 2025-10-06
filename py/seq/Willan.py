@@ -1,10 +1,9 @@
 import math as m
 
 def modFact(j: int, i: int) -> int:
-    r = int(1)
-    for w in range(2, j+1):
-        r *= w
-        r = r % i
+    r = 1
+    for w in range(2, j + 1):
+        r = (r * w) % i
     
     return r
 
