@@ -22,9 +22,9 @@ By Wilson's theorem, $n+1$ is prime if and only if $n! \equiv n \pmod{n+1}$. Thu
 Willans'_formula/
 ├── py/
 │   ├── seq/
-│   │   └── Willan.py
+│   │   └── Willans.py
 │   ├── conc/
-│   │   └── Willan.py
+│   │   └── Willans.py
 │   ├── nth_prime.py
 │   └── all_until_nth_prime.py
 └── README.md
@@ -36,7 +36,7 @@ Willans'_formula/
 
 `Python` implementation of the formula.
 
-- `Willan.py`:
+- `Willans.py`:
 contains the implementation of the formula, which is the function `nthPrime`. This function takes a single argument, the number $n$, since it computes the $n$-th prime number;
 - `nth_prime.py`:
 outputs the $n$-th prime number;

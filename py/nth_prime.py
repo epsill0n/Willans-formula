@@ -1,7 +1,7 @@
 import sys
 import time
-from conc.Willan import nthPrime as nthPrime_conc
-from seq.Willan import nthPrime as nthPrime_seq
+from conc.Willans import nthPrime as nthPrime_conc
+from seq.Willans import nthPrime as nthPrime_seq
 
 if __name__=='__main__':
     
