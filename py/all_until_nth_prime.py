@@ -1,13 +1,22 @@
+# Willans'_formula - all_until_nth_prime.py
+# Copyright (c) 2025 epsill0n epsill0n
+# Non-commercial use only. Redistribution or modification prohibited without permission.
+# See LICENSE.txt for full terms.
+
 import sys
 import time
-from conc.Willans import nthPrime as nthPrime_conc
-from seq.Willans import nthPrime as nthPrime_seq
+from WF import Willans
+nthPrime_seq = Willans.seq.nthPrime
+nthPrime_conc = Willans.conc.nthPrime
+import mpmath
 
 if __name__=='__main__':
 
     if (len(sys.argv)!=3):
-        print(f'Usage: [{sys.argv[0]}] [n] [1/0 for concurrency] ')
+        print(f'Usage: [{sys.argv[0]}] [n] [1/0 for concurrency]')
         exit(-1)
+    
+    print(f'Using mpmath precision of {mpmath.mp.dps} decimals.')
     
     n = int(sys.argv[1])
     isConcurrent = int(sys.argv[2])
