@@ -596,7 +596,7 @@ Details:
 
 <br>
 
-> ***Concurrent implementations achieve orders-of-magnitude speedup for larger $n$***
+> ***Concurrent implementations achieve orders-of-magnitude speedup for larger n***
 
 
 <h2>Changelog</h2>
