@@ -40,29 +40,30 @@ int main(int argc, char** argv) {
     std::chrono::system_clock::time_point begin, end;
     std::chrono::duration<double, std::milli> elapsed;
 
-    if (isConcurrent == 0)
-        std::cout << "Not using concurrency.\n" << std::flush;
-    else std::cout << "Using concurrency.\n" << std::flush;
+    if (isConcurrent)
+        std::cout << "Using concurrency.\n" << std::flush;
+    else std::cout << "Not using concurrency.\n" << std::flush;
 
-    if (isCumulative == 0)
-        std::cout << "Not using accumulation.\n" << std::flush;
-    else std::cout << "Using accumulation.\n" << std::flush;
+    if (isCumulative)
+        std::cout << "Using accumulation.\n" << std::flush;
+    else std::cout << "Not using accumulation.\n" << std::flush;
 
     WF::init_cumulative(isConcurrent, isCumulative);
 
-    if (isConcurrent == 0) {
+    if (isConcurrent) {
 
         begin = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < n; ++i)
-            prime[i] = WF::seq::nthPrime(i+1);
-
+            prime[i] = WF::conc::nthPrime(i+1);
+        
         end = std::chrono::high_resolution_clock::now();
 
     } else {
 
         begin = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < n; ++i)
-            prime[i] = WF::conc::nthPrime(i+1);
+            prime[i] = WF::seq::nthPrime(i+1);
+
         end = std::chrono::high_resolution_clock::now();
 
     }
