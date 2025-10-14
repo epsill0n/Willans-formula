@@ -10,7 +10,7 @@ In 1964, Willans gave the formula:
 <div align="center">
 
 $$
-\large \displaystyle
+\Large \displaystyle
 p_n = 1 + \sum_{i=1}^{2^n} \left\lfloor \left(\frac{n}{\displaystyle \sum_{j=1}^{i} \left\lfloor \left(\cos \frac{(j-1)! + 1}{j} \pi \right)^2 \right\rfloor}\right)^{1/n} \right\rfloor
 $$
 
