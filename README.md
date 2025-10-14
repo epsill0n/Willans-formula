@@ -485,15 +485,15 @@ Details:
 ### `nth_prime` Benchmark (Python vs C++, sequential vs concurrent)
 
 <table class="tg" style="undefined;table-layout: fixed; width: 1010px"><colgroup>
-<col style="width: 81px">
-<col style="width: 141px">
-<col style="width: 123px">
-<col style="width: 122px">
-<col style="width: 114px">
-<col style="width: 111px">
-<col style="width: 110px">
-<col style="width: 106px">
-<col style="width: 102px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
 </colgroup>
 <tbody>
   <tr>
@@ -647,15 +647,15 @@ Details:
 ### `all_until_nth_prime` Benchmark (Python vs C++, sequential vs concurrent)
 
 <table class="tg" style="undefined;table-layout: fixed; width: 1031px"><colgroup>
-<col style="width: 81px">
-<col style="width: 141px">
-<col style="width: 123px">
-<col style="width: 122px">
-<col style="width: 114px">
-<col style="width: 111px">
-<col style="width: 110px">
-<col style="width: 127px">
-<col style="width: 102px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
+<col style="width: 160px">
 </colgroup>
 <tbody>
   <tr>
