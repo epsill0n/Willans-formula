@@ -1,4 +1,4 @@
-// Willans'_formula - all_until_nth_prime.cpp
+// Willans'_formula - nth_prime.cpp
 // Copyright (c) 2025 epsill0n epsill0n
 // Non-commercial use only. Redistribution or modification prohibited without permission.
 // See LICENSE.txt for full terms.
@@ -20,7 +20,7 @@ __attribute__((constructor)) void init() {
     std::ios_base::sync_with_stdio(false);
     std::cin.tie(0);
 #endif
-    WF::init_mpfr(MPFR_PRECISION);
+    WF::init_mpfr();
 }
 
 
@@ -35,8 +35,8 @@ int main(int argc, char** argv) {
     int n = std::atoi(argv[1]);
     bool isConcurrent = bool(std::atoi(argv[2]));
     bool isCumulative = bool(std::atoi(argv[3]));
-    
-    mpz_class prime[n];
+
+    mpz_class prime;
     std::chrono::system_clock::time_point begin, end;
     std::chrono::duration<double, std::milli> elapsed;
 
@@ -49,28 +49,24 @@ int main(int argc, char** argv) {
     else std::cout << "Using accumulation.\n" << std::flush;
 
     WF::init_cumulative(isConcurrent, isCumulative);
-
+    
     if (isConcurrent == 0) {
 
         begin = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < n; ++i)
-            prime[i] = WF::seq::nthPrime(i+1);
-
+        prime = WF::seq::nthPrime(n);
         end = std::chrono::high_resolution_clock::now();
 
     } else {
 
         begin = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < n; ++i)
-            prime[i] = WF::conc::nthPrime(i+1);
+        prime = WF::conc::nthPrime(n);
         end = std::chrono::high_resolution_clock::now();
-
     }
-    
+
     elapsed = end - begin;
-    for (int i = 0; i < n; ++i)
-        std::cout << prime[i] << " ";
-    std::cout << "\nTime: " << std::fixed << std::setprecision(10) <<  (elapsed.count()) << "ms\n";
+    std::cout << prime << "\n";
+    std::cout << "Time: " << std::fixed << std::setprecision(10) <<  (elapsed.count()) << "ms\n";
     
+
     std::cout << std::flush;
 }

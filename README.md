@@ -1,3 +1,8 @@
+# Implementation of Willans’ Formula for the n-th Prime
+
+> This repository implements Willans’ formula — a remarkable mathematical expression that generates the *n*-th prime number.
+> Implemented in both **Python** (using `mpmath`) and **C++** (using `GMP`/`MPFR`), it demonstrates the use of arbitrary-precision arithmetic, concurrency, and modular optimization.
+
 <h1>Implementation of Willans' formula</h1>
 
 In 1964, Willans gave the formula:
@@ -18,6 +23,19 @@ By Wilson's theorem, $n+1$ is prime if and only if $n! \equiv n \pmod{n+1}$. Thu
 
 > **Precision note:** Throughout this project, "256-bit precision" and "77 decimal digits" refer to the same numerical precision level (since $\log_2(10^{77}) \approx 256$ bits). This equivalence applies to both the **MPFR** (C++) and **mpmath** (Python) implementations, ensuring consistent results across languages.
 
+## Table of Contents
+1. [Overview](#implementation-of-willans-formula-for-the-n-th-prime)
+2. [Content & Functionality](#content--functionality)
+3. [Python Implementation](#python-implementation)
+4. [C++ Implementation](#c-implementation)
+5. [Optimizations](#optimizations)
+6. [Dependencies](#dependencies)
+7. [Usage](#usage)
+8. [Benchmark](#benchmark)
+9. [License](#license)
+
+---
+
 <h2>Content & Functionality</h2>
 
 ```
@@ -28,16 +46,15 @@ Willans'_formula/
 │   └── all_until_nth_prime.py
 │
 ├── cpp/
-│   ├── WF_base.hpp
-│   ├── WF_impl.hpp
+│   ├── WF.hpp
 │   ├── nth_prime.cpp
 │   ├── all_until_nth_prime.cpp
-│   ├── nth_prime.exe                                           (need to be built)
-│   └── all_until_nth_prime.exe                                 (need to be built)
+│   ├── nth_prime.exe                 (need to be built)
+│   └── all_until_nth_prime.exe       (need to be built)
 │
 ├── CMakeLists.txt
 ├── README.md
-└── License.txt
+└── LICENSE.txt
 ```
 
 > **Note:** The compiled C++ binaries intentionally use the `.exe` suffix for naming consistency and clarity across platforms.  
@@ -71,16 +88,15 @@ outputs the $n$-th prime number;
 
 3. Efficient process pooling - a `multiprocessing.Pool` is used to distribute rows across all available CPU cores. Each process returns its computed contribution to the final sum, which are then combined to produce the nth prime.
 
-
+Each process uses a thread-local cache for factorial and inner-sum values, ensuring correct and thread-safe accumulation.
 
 <h3>cpp/</h3>
 
-- `WF_base.hpp`: the base included by `WF_impl.hpp`; contains the `modFact` implementation;
-- `WF_impl.hpp`: contains the sequential and concurrent implementations of the formula;
+- `WF.hpp`: contains the implementations of the formula, as well as helper functions;
 - `nth_prime.cpp`: source code for outputting the $n$-th prime number;
 - `all_until_nth_prime.cpp`: source code for outputting all the prime numbers until the $n$-th prime number.
 
-Willans’ formula is implemented inside the `WF` namespace, defined in `WF_impl.hpp`.
+Willans’ formula is implemented inside the `WF` namespace, defined in `WF.hpp`. This namespace encapsulates two other namespaces, `seq` and `conc`, both containing an implementation of the formula for computing the $n$-th prime number, as well as some helper functions.
 
 The implementation leverages **GMP** (`mpz_class`) for arbitrary-size integers and **MPFR** (`mpfr::mpreal`) for high-precision floating-point arithmetic (256-bit precision by default).
 
@@ -115,7 +131,9 @@ The implementation includes two utility functions for converting between high-pr
     - Converts an `mpz_class` integer to an exact `mpfr::mpreal`.
     - Ensures that subsequent floating-point operations (division, cosine, root) are performed with high precision.
 
-<h3>Modular Factorial</h3>
+<h3>Optimizations</h3>
+
+<h4>Modular Factorial</h4>
 
 Willans' formula requires computing factorials modulo a number. Instead of calculating the full factorial `j!`, which grows extremely fast, we compute it modulo `i`:
 
@@ -128,7 +146,7 @@ This keeps intermediate numbers manageable while preserving correctness, since o
 - **C++ Implementation** uses `mpz_class` for arbitrary-precision integers and optimizes for small values with `unsigned long` arithmetic.
 - **Python Implementation** uses standard Python integers, which support arbitrary precision by default.
 
-<h4>Explanation</h4>
+<h5>Explanation</h5>
 
 For the key term in Willans' formula, we compute:
 
@@ -182,6 +200,70 @@ def modFact(j: int, i: int) -> int:
 
 > By using modular factorials, both sequential and concurrent implementations avoid huge numbers and maintain full precision, making the computation feasible even for larger $n$.
 
+<h4>Caching & Cumulative Functions</h4>
+
+<h5>Inner Sum</h5>
+
+Let us denote the inner sum as:
+
+$$
+\displaystyle \sum_{j=1}^{i} \left\lfloor \left(\cos \frac{(j-1)! + 1}{j} \pi \right)^2 \right\rfloor = \sum_{j=1}^{i} \varphi(j) = \Phi(i) 
+$$
+
+Therefore,
+
+$$
+\displaystyle \sum_{j=1}^{i} \varphi(j) = \sum_{j=1}^{i-1} \varphi(j) + \varphi(i)
+$$
+
+$$
+\iff
+$$
+
+$$
+\displaystyle \Phi(i) = \Phi(i-1) + \varphi(i)
+$$
+
+Because $i$ goes from $1$ to $2^n$ in the outer sum, we first compute $\varphi(i-1)$ and then $\varphi(i)$.
+
+We can avoid recomputations by caching the latest computed value for $\varphi$.
+
+<br>
+
+<h5>Modular Factorial</h5>
+
+Let us denote the modular factorial, as:
+
+$$
+\displaystyle j! \bmod i = \Psi(j, i)
+$$
+
+Since
+
+$$
+\displaystyle j! = (j-1)! \cdot j,
+$$
+
+follows
+
+$$
+\displaystyle j! \bmod i = \left( (j-1)! \bmod i \right) \cdot \left( j \bmod i \right),
+$$
+
+$$
+\iff
+$$
+
+$$
+\Psi(j,i) = \Psi(j-1, i) \cdot \left( j \bmod i \right)
+$$
+
+Because in the inner sum, $j$ goes from $1$ to $i$, we compute $\Psi(j-1,i)$ $\left(\text{modFact }(j-2,j)\text{ in the code}\right)$ before $\Psi(j-2,i)$ $\left(\text{modFact }(j-3,j)\text{ in the code}\right)$.
+
+We can avoid recomputations by caching the latest computed value for $\Psi$. We also need to save the modulus $i$ to check if the cached modular factorial is relevant.
+
+> Note: Accumulation here refers to using a cumulative cache for inner-sum values (Φ(i)) or modular factorials (Ψ(j, i)), avoiding recomputation and redundant arithmetic.
+
 <h2>Dependencies</h2>
 
 <h3>Python</h3>
@@ -231,6 +313,7 @@ For downloads, please visit:
 The scripts take 2 CLI arguments: 
 1. $n$;
 2. Indicator whether or not to use concurrency: 0 means that *concurrency will **NOT** be used*; any other value means that *concurrency will indeed **be used***.
+3. Indicator whether or not to use accumulation: 0 means that *accumulation will **NOT** be used*; any other value means that *accumulation will indeed **be used***.
 
 <br>
 <br>
@@ -239,7 +322,7 @@ The scripts take 2 CLI arguments:
 ```py
 mpmath.mp.dps = 77
 ```
-**in** `WF.py` **(line 9). You can change it to your liking.**
+**in** `WF.py` **(line 10). You can change it to your liking.**
 **In the end, the time it took to do the computations for calculating the prime(s) is printed to console.**
 
 <br>
@@ -249,16 +332,17 @@ mpmath.mp.dps = 77
 
 Example:
 ```bash
-py ./py/nth_prime.py 11 1
+py ./py/nth_prime.py 11 1 0
 ```
-computes the 11th (*first argument*) prime number **with** concurrency (*second argument*).
+computes the 11th (*first argument*) prime number **with** concurrency (*second argument*) and **without** accumulation (*third argument*).
 
 Output:
 ```bash
 Using mpmath precision of 77 decimals.
 Using concurrency.
+Not using accumulation.
 31
-Time: 16716.9559001923ms
+Time: 17515.6862735748ms
 ```
 
 <br>
@@ -266,16 +350,17 @@ Time: 16716.9559001923ms
 
 Example:
 ```bash
-py ./py/all_until_nth_prime.py 9 0
+py ./py/all_until_nth_prime.py 9 0 1
 ```
-computes the first 9 (*first argument*) prime numbers **without** concurrency (*second argument*).
+computes the first 9 (*first argument*) prime numbers **without** concurrency (*second argument*) and **with** accumulation (*third argument*).
 
 Output:
 ```bash
 Using mpmath precision of 77 decimals.
 Not using concurrency.
+Using accumulation.
 2 3 5 7 11 13 17 19 23 
-Time: 4531.45956993103ms
+Time: 76.12895965576172ms
 ```
 
 <h3>C++</h3>
@@ -304,6 +389,7 @@ cpp/all_until_nth_prime.exe
 The executables take 2 CLI arguments: 
 1. $n$;
 2. Indicator whether or not to use concurrency: 0 means that *concurrency will **NOT** be used*; any other value means that *concurrency will indeed **be used***.
+3. Indicator whether or not to use accumulation: 0 means that *accumulation will **NOT** be used*; any other value means that *accumulation will indeed **be used***.
 
 <br>
 <br>
@@ -314,7 +400,7 @@ The executables take 2 CLI arguments:
 #   define MPFR_PRECISION 256
 ```
 
-**in** `WF_base.hpp` **(line 15). You can change it to your liking.**
+**in** `WF.hpp` **(line 19). You can change it to your liking.**
 
 **In the end, the time it took to do the computations for calculating the prime(s) is printed.**
 
@@ -325,16 +411,17 @@ The executables take 2 CLI arguments:
 
 Example:
 ```bash
-./cpp/nth_prime.exe 11 1
+./cpp/nth_prime.exe 11 1 0
 ```
-computes the 11th (*first argument*) prime number **with** concurrency (*second argument*).
+computes the 11th (*first argument*) prime number **with** concurrency (*second argument*) and **without** accumulation (*third argument*).
 
 Output:
 ```bash
 Using MPFR precision of 256 bits.
 Using concurrency.
+Not using accumulation.
 31
-Time: 2914.0817400000ms
+Time: 2604.9122080000ms
 ```
 
 <br>
@@ -342,16 +429,17 @@ Time: 2914.0817400000ms
 
 Example:
 ```bash
-./cpp/all_until_nth_prime.exe 9 0
+./cpp/all_until_nth_prime.exe 9 0 1
 ```
-computes the first 9 (*first argument*) prime numbers **without** concurrency (*second argument*).
+computes the first 9 (*first argument*) prime numbers **without** concurrency (*second argument*) and **with** accumulation (*third argument*).
 
 Output:
 ```bash
 Using MPFR precision of 256 bits.
 Not using concurrency.
+Using accumulation.
 2 3 5 7 11 13 17 19 23 
-Time: 550.0970100000ms
+Time: 12.3837230000ms
 ```
 
 <h3>C++ Initialization Note</h3>
@@ -382,222 +470,408 @@ Details:
 
 ### Setup
 
-| Component        | Specification                       |
-|-----------------|------------------------------------|
-| CPU              | AMD Ryzen 7 5825U                  |
-| RAM              | 16 GiB DDR4 SDRAM                  |
-| OS               | openSUSE Tumbleweed                |
-| Python Version   | 3.13.3                             |
-| C++ Compiler     | g++ (GCC) 14.2.1    |
+| Component        | Specification                                                 |
+|------------------|----------------------------------------------------------------|
+| CPU              | AMD Ryzen 7 5825U                                             |
+| RAM              | 16 GiB DDR4 SDRAM                                             |
+| OS               | openSUSE Tumbleweed                                           |
+| Python Version   | 3.13.3                                                        |
+| C++ Compiler     | g++ (GCC) 14.2.1                                              |
 | Precision        | Python: 77 decimals (~256 bits), C++: 256 bits (~77 decimals) |
-| Fast I/O (C++)   | Enabled via `FAST_IO` macro |
+| Fast I/O (C++)   | Enabled via `FAST_IO` macro                                   |
 
 ---
 
 ### `nth_prime` Benchmark (Python vs C++, sequential vs concurrent)
 
-<table>
-  <thead>
-    <tr>
-      <th>n-th prime</th>
-      <th>Python seq (ms)</th>
-      <th>Python conc (ms)</th>
-      <th>C++ seq (ms)</th>
-      <th>C++ conc (ms)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>1</td>
-      <td style="color:yellow;">0.322342</td>
-      <td style="color:red;">27.131081</td>
-      <td style="color:green;">0.120215</td>
-      <td style="color:yellow;">0.839459</td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td style="color:yellow;">0.433207</td>
-      <td style="color:red;">14.464855</td>
-      <td style="color:green;">0.165149</td>
-      <td style="color:yellow;">0.627323</td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td style="color:yellow;">1.562834</td>
-      <td style="color:red;">16.047955</td>
-      <td style="color:green;">0.185036</td>
-      <td style="color:yellow;">0.586396</td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td style="color:yellow;">4.510164</td>
-      <td style="color:red;">15.815020</td>
-      <td style="color:yellow;">0.578381</td>
-      <td style="color:green;">0.487442</td>
-    </tr>
-    <tr>
-      <td>5</td>
-      <td style="color:yellow;">15.270472</td>
-      <td style="color:red;">20.074606</td>
-      <td style="color:yellow;">2.020497</td>
-      <td style="color:green;">0.633243</td>
-    </tr>
-    <tr>
-      <td>6</td>
-      <td style="color:red;">55.511951</td>
-      <td style="color:yellow;">26.605129</td>
-      <td style="color:yellow;">7.697089</td>
-      <td style="color:green;">1.169236</td>
-    </tr>
-    <tr>
-      <td>7</td>
-      <td style="color:red;">207.010746</td>
-      <td style="color:yellow;">50.860405</td>
-      <td style="color:yellow;">21.057605</td>
-      <td style="color:green;">3.358850</td>
-    </tr>
-    <tr>
-      <td>8</td>
-      <td style="color:red;">834.560394</td>
-      <td style="color:yellow;">152.147293</td>
-      <td style="color:yellow;">90.869233</td>
-      <td style="color:green;">12.753101</td>
-    </tr>
-    <tr>
-      <td>9</td>
-      <td style="color:red;">3685.491562</td>
-      <td style="color:yellow;">604.141951</td>
-      <td style="color:yellow;">428.346209</td>
-      <td style="color:green;">63.768299</td>
-    </tr>
-    <tr>
-      <td>10</td>
-      <td style="color:red;">18574.532509</td>
-      <td style="color:yellow;">2924.258471</td>
-      <td style="color:yellow;">2351.954378</td>
-      <td style="color:green;">415.306161</td>
-    </tr>
-    <tr>
-      <td>11</td>
-      <td style="color:red;">105393.932819</td>
-      <td style="color:yellow;">17762.602329</td>
-      <td style="color:yellow;">14704.352002</td>
-      <td style="color:green;">2789.116357</td>
-    </tr>
-  </tbody>
-</table>
-
-> Notes for filling:  
-> - Python seq = `py/nth_prime.py n 0`  
-> - Python conc = `py/nth_prime.py n 1`  
-> - C++ seq = `cpp/nth_prime.exe n 0`  
-> - C++ conc = `cpp/nth_prime.exe n 1`
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-lboi{border-color:inherit;text-align:left;vertical-align:middle}
+.tg .tg-c3ow{border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+</style>
+<table class="tg" style="undefined;table-layout: fixed; width: 1010px"><colgroup>
+<col style="width: 81px">
+<col style="width: 141px">
+<col style="width: 123px">
+<col style="width: 122px">
+<col style="width: 114px">
+<col style="width: 111px">
+<col style="width: 110px">
+<col style="width: 106px">
+<col style="width: 102px">
+</colgroup>
+<tbody>
+  <tr>
+    <td class="tg-0pky"></td>
+    <td class="tg-c3ow" colspan="4">Non-cumulative</td>
+    <td class="tg-c3ow" colspan="4">Cumulative </td>
+  </tr>
+  <tr>
+    <td class="tg-0pky"></td>
+    <td class="tg-c3ow" colspan="2">Sequential</td>
+    <td class="tg-c3ow" colspan="2">Concurrent</td>
+    <td class="tg-c3ow" colspan="2">Sequential</td>
+    <td class="tg-c3ow" colspan="2">Concurrent</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">n (upto)</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">1</td>
+    <td class="tg-lboi">🟡 0.322342</td>
+    <td class="tg-lboi">🟢 0.120215</td>
+    <td class="tg-lboi">🟡 27.131081</td>
+    <td class="tg-lboi">🟡 0.839459</td>
+    <td class="tg-0pky">🟡 0.438928</td>
+    <td class="tg-0pky">🟡 0.181741</td>
+    <td class="tg-0pky">🔴 42.539119</td>
+    <td class="tg-0pky">🟡 1.136843</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">2</td>
+    <td class="tg-lboi">🟡 0.433207</td>
+    <td class="tg-lboi">🟡 0.165149</td>
+    <td class="tg-lboi">🟡 14.464855</td>
+    <td class="tg-lboi">🟡 0.627323</td>
+    <td class="tg-0pky">🟡 0.377178</td>
+    <td class="tg-0pky">🟢 0.105228</td>
+    <td class="tg-0pky">🔴 24.685382</td>
+    <td class="tg-0pky">🟡 0.818946</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">3</td>
+    <td class="tg-lboi">🟡 1.562834</td>
+    <td class="tg-lboi">🟡 0.185036</td>
+    <td class="tg-lboi">🟡 16.047955</td>
+    <td class="tg-lboi">🟡 0.586396</td>
+    <td class="tg-0pky">🟡 1.074552</td>
+    <td class="tg-0pky">🟢 0.089237</td>
+    <td class="tg-0pky">🔴 26.222229</td>
+    <td class="tg-0pky">🟡 0.880562</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">4</td>
+    <td class="tg-lboi">🟡 4.510164</td>
+    <td class="tg-lboi">🟡 0.578381</td>
+    <td class="tg-lboi">🟡 15.815020</td>
+    <td class="tg-lboi">🟡 0.487442</td>
+    <td class="tg-0pky">🟡 1.781463</td>
+    <td class="tg-0pky">🟢 0.177162</td>
+    <td class="tg-0pky">🔴 27.725458</td>
+    <td class="tg-0pky">🟡 0.718188</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">5</td>
+    <td class="tg-lboi">🟡 15.270472</td>
+    <td class="tg-lboi">🟡 2.020497</td>
+    <td class="tg-lboi">🟡 20.074606</td>
+    <td class="tg-lboi">🟡 0.633243</td>
+    <td class="tg-0pky">🟡 3.138542</td>
+    <td class="tg-0pky">🟢 0.322215</td>
+    <td class="tg-0pky">🔴 28.650760</td>
+    <td class="tg-0pky">🟡 0.719690</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">6</td>
+    <td class="tg-lboi">🔴 55.511951</td>
+    <td class="tg-lboi">🟡 7.697089</td>
+    <td class="tg-lboi">🟡 26.605129</td>
+    <td class="tg-lboi">🟡 1.169236</td>
+    <td class="tg-0pky">🟡 5.635499</td>
+    <td class="tg-0pky">🟢 0.710593</td>
+    <td class="tg-0pky">🟡 33.384323</td>
+    <td class="tg-0pky">🟡 0.838283</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">7</td>
+    <td class="tg-lboi">🔴 207.010746</td>
+    <td class="tg-lboi">🟡 21.057605</td>
+    <td class="tg-lboi">🟡 50.860405</td>
+    <td class="tg-lboi">🟡 3.358850</td>
+    <td class="tg-0pky">🟡 11.571407</td>
+    <td class="tg-0pky">🟡 1.460400</td>
+    <td class="tg-0pky">🟡 41.068792</td>
+    <td class="tg-0pky">🟢 0.914786</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">8</td>
+    <td class="tg-lboi">🔴 834.560394</td>
+    <td class="tg-lboi">🟡 90.869233</td>
+    <td class="tg-lboi">🟡 152.147293</td>
+    <td class="tg-lboi">🟡 12.753101</td>
+    <td class="tg-0pky">🟡 26.289463</td>
+    <td class="tg-0pky">🟡 3.068867</td>
+    <td class="tg-0pky">🟡 51.230430</td>
+    <td class="tg-0pky">🟢 1.459137</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">9</td>
+    <td class="tg-lboi">🔴 3685.491562</td>
+    <td class="tg-lboi">🟡 428.346209</td>
+    <td class="tg-lboi">🟡 604.141951</td>
+    <td class="tg-lboi">🟡 63.768299</td>
+    <td class="tg-0pky">🟡 60.386419</td>
+    <td class="tg-0pky">🟡 6.386711</td>
+    <td class="tg-0pky">🟡 100.171566</td>
+    <td class="tg-0pky">🟢 2.365878</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">10</td>
+    <td class="tg-lboi">🔴 18574.532509</td>
+    <td class="tg-lboi">🟡 2351.954378</td>
+    <td class="tg-lboi">🟡 2924.258471</td>
+    <td class="tg-lboi">🟡 415.306161</td>
+    <td class="tg-0pky">🟡 165.998458</td>
+    <td class="tg-0pky">🟡 14.297772</td>
+    <td class="tg-0pky">🟡 237.833499</td>
+    <td class="tg-0pky">🟢 5.514976</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">11</td>
+    <td class="tg-lboi">🔴 105393.932819</td>
+    <td class="tg-lboi">🟡 14704.352002</td>
+    <td class="tg-lboi">🟡 17762.602329</td>
+    <td class="tg-lboi">🟡 2789.116357</td>
+    <td class="tg-0pky">🟡 515.338182</td>
+    <td class="tg-0pky">🟡 32.422103</td>
+    <td class="tg-0pky">🟡 744.323492</td>
+    <td class="tg-0pky">🟢 16.942394</td>
+  </tr>
+</tbody></table>
 
 ---
 
 ### `all_until_nth_prime` Benchmark (Python vs C++, sequential vs concurrent)
 
-<table>
-  <thead>
-    <tr>
-      <th>n (upto)</th>
-      <th>Python seq (ms)</th>
-      <th>Python conc (ms)</th>
-      <th>C++ seq (ms)</th>
-      <th>C++ conc (ms)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>1</td>
-      <td style="color:yellow;">0.312090</td>
-      <td style="color:red;">26.793957</td>
-      <td style="color:green;">0.119474</td>
-      <td style="color:yellow;">0.680676</td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td style="color:yellow;">0.563860</td>
-      <td style="color:red;">28.688669</td>
-      <td style="color:green;">0.140293</td>
-      <td style="color:yellow;">0.989705</td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td style="color:yellow;">1.976252</td>
-      <td style="color:red;">47.089338</td>
-      <td style="color:green;">0.263123</td>
-      <td style="color:yellow;">1.410182</td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td style="color:yellow;">6.392956</td>
-      <td style="color:red;">62.517881</td>
-      <td style="color:green;">0.882263</td>
-      <td style="color:yellow;">1.910691</td>
-    </tr>
-    <tr>
-      <td>5</td>
-      <td style="color:yellow;">21.238327</td>
-      <td style="color:red;">89.342833</td>
-      <td style="color:yellow;">3.111601</td>
-      <td style="color:green;">2.551071</td>
-    </tr>
-    <tr>
-      <td>6</td>
-      <td style="color:yellow;">75.675488</td>
-      <td style="color:red;">119.777679</td>
-      <td style="color:yellow;">9.734052</td>
-      <td style="color:green;">3.883969</td>
-    </tr>
-    <tr>
-      <td>7</td>
-      <td style="color:red;">286.724567</td>
-      <td style="color:yellow;">167.028666</td>
-      <td style="color:yellow;">29.019844</td>
-      <td style="color:green;">6.662405</td>
-    </tr>
-    <tr>
-      <td>8</td>
-      <td style="color:red;">1148.036480</td>
-      <td style="color:yellow;">339.717865</td>
-      <td style="color:yellow;">122.630714</td>
-      <td style="color:green;">19.404044</td>
-    </tr>
-    <tr>
-      <td>9</td>
-      <td style="color:red;">4930.480242</td>
-      <td style="color:yellow;">1031.448364</td>
-      <td style="color:yellow;">581.074922</td>
-      <td style="color:green;">88.178959</td>
-    </tr>
-    <tr>
-      <td>10</td>
-      <td style="color:red;">23646.401882</td>
-      <td style="color:yellow;">4098.479033</td>
-      <td style="color:yellow;">3077.772619</td>
-      <td style="color:green;">521.155381</td>
-    </tr>
-    <tr>
-      <td>11</td>
-      <td style="color:red;">126190.231323</td>
-      <td style="color:yellow;">22108.228683</td>
-      <td style="color:yellow;">18484.995409</td>
-      <td style="color:green;">3421.928999</td>
-    </tr>
-  </tbody>
-</table>
-
-> Notes for filling:  
-> - Python seq = `py/all_until_nth_prime.py n 0`  
-> - Python conc = `py/all_until_nth_prime.py n 1`  
-> - C++ seq = `cpp/all_until_nth_prime.exe n 0`  
-> - C++ conc = `cpp/all_until_nth_prime.exe n 1`
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-lboi{border-color:inherit;text-align:left;vertical-align:middle}
+.tg .tg-c3ow{border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+</style>
+<table class="tg" style="undefined;table-layout: fixed; width: 1031px"><colgroup>
+<col style="width: 81px">
+<col style="width: 141px">
+<col style="width: 123px">
+<col style="width: 122px">
+<col style="width: 114px">
+<col style="width: 111px">
+<col style="width: 110px">
+<col style="width: 127px">
+<col style="width: 102px">
+</colgroup>
+<tbody>
+  <tr>
+    <td class="tg-0pky"></td>
+    <td class="tg-c3ow" colspan="4">Non-cumulative</td>
+    <td class="tg-c3ow" colspan="4">Cumulative </td>
+  </tr>
+  <tr>
+    <td class="tg-0pky"></td>
+    <td class="tg-c3ow" colspan="2">Sequential</td>
+    <td class="tg-c3ow" colspan="2">Concurrent</td>
+    <td class="tg-c3ow" colspan="2">Sequential</td>
+    <td class="tg-c3ow" colspan="2">Concurrent</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">n (upto)</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+    <td class="tg-c3ow">Python</td>
+    <td class="tg-c3ow">C++</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">1</td>
+    <td class="tg-lboi">🟡 0.312090</td>
+    <td class="tg-lboi">🟢 0.119474</td>
+    <td class="tg-lboi">🔴 26.793957</td>
+    <td class="tg-lboi">🟡 0.680676</td>
+    <td class="tg-0pky">🟡 0.305414</td>
+    <td class="tg-0pky">🟡 0.149080</td>
+    <td class="tg-0pky">🟡 25.183200</td>
+    <td class="tg-0pky">🟡 0.634730</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">2</td>
+    <td class="tg-lboi">🟡 0.563860</td>
+    <td class="tg-lboi">🟢 0.140293</td>
+    <td class="tg-lboi">🔴 28.688669</td>
+    <td class="tg-lboi">🟡 0.989705</td>
+    <td class="tg-0pky">🟡 0.352144</td>
+    <td class="tg-0pky">🟡 0.114765</td>
+    <td class="tg-0pky">🟡27.993440</td>
+    <td class="tg-0pky">🟡 0.889839</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">3</td>
+    <td class="tg-lboi">🟡 1.976252</td>
+    <td class="tg-lboi">🟢 0.263123</td>
+    <td class="tg-lboi">🔴 47.089338</td>
+    <td class="tg-lboi">🟡 1.410182</td>
+    <td class="tg-0pky">🟡 0.985622</td>
+    <td class="tg-0pky">🟡 0.138871</td>
+    <td class="tg-0pky">🟡 45.850992</td>
+    <td class="tg-0pky">🟡 1.397160</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">4</td>
+    <td class="tg-lboi">🟡 6.392956</td>
+    <td class="tg-lboi">🟢 0.882263</td>
+    <td class="tg-lboi">🔴 62.517881</td>
+    <td class="tg-lboi">🟡 1.910691</td>
+    <td class="tg-0pky">🟡 1.830339</td>
+    <td class="tg-0pky">🟡 0.297017</td>
+    <td class="tg-0pky">🟡 60.323238</td>
+    <td class="tg-0pky">🟡 1.622252</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">5</td>
+    <td class="tg-lboi">🟡 21.238327</td>
+    <td class="tg-lboi">🟡 3.111601</td>
+    <td class="tg-lboi">🔴 89.342833</td>
+    <td class="tg-lboi">🟡 2.551071</td>
+    <td class="tg-0pky">🟡 4.434585</td>
+    <td class="tg-0pky">🟡 0.621856</td>
+    <td class="tg-0pky">🟡 84.814310</td>
+    <td class="tg-0pky">🟢 1.809723</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">6</td>
+    <td class="tg-lboi">🟡 75.675488</td>
+    <td class="tg-lboi">🟡 9.734052</td>
+    <td class="tg-lboi">🔴 119.777679</td>
+    <td class="tg-lboi">🟡 3.883969</td>
+    <td class="tg-0pky">🟡 6.624460</td>
+    <td class="tg-0pky">🟡 1.636859</td>
+    <td class="tg-0pky">🟡 107.084989</td>
+    <td class="tg-0pky">🟢 2.134353</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">7</td>
+    <td class="tg-lboi">🔴 286.724567</td>
+    <td class="tg-lboi">🟡 29.019844</td>
+    <td class="tg-lboi">🟡 167.028666</td>
+    <td class="tg-lboi">🟡 6.662405</td>
+    <td class="tg-0pky">🟡 14.232635</td>
+    <td class="tg-0pky">🟡 2.737794</td>
+    <td class="tg-0pky">🟡 131.708621</td>
+    <td class="tg-0pky">🟢 2.639809</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">8</td>
+    <td class="tg-lboi">🔴 1148.036480</td>
+    <td class="tg-lboi">🟡 122.630714</td>
+    <td class="tg-lboi">🟡 339.717865</td>
+    <td class="tg-lboi">🟡 19.404044</td>
+    <td class="tg-0pky">🟡 32.555818</td>
+    <td class="tg-0pky">🟡 6.132860</td>
+    <td class="tg-0pky">🟡 178.711175</td>
+    <td class="tg-0pky">🟢 3.624857</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">9</td>
+    <td class="tg-lboi">🔴 4930.480242</td>
+    <td class="tg-lboi">🟡 581.074922</td>
+    <td class="tg-lboi">🟡 1031.448364</td>
+    <td class="tg-lboi">🟡 88.178959</td>
+    <td class="tg-0pky">🟡 72.506189</td>
+    <td class="tg-0pky">🟡 9.065279</td>
+    <td class="tg-0pky">🟡 267.734766</td>
+    <td class="tg-0pky">🟢 7.723773</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">10</td>
+    <td class="tg-lboi">🔴 23646.401882</td>
+    <td class="tg-lboi">🟡 3077.772619</td>
+    <td class="tg-lboi">🟡 4098.479033</td>
+    <td class="tg-lboi">🟡 521.155381</td>
+    <td class="tg-0pky">🟡 200.129032</td>
+    <td class="tg-0pky">🟡 19.657179</td>
+    <td class="tg-0pky">🟡 497.070550</td>
+    <td class="tg-0pky">🟢 10.590669</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">11</td>
+    <td class="tg-lboi">🔴 126190.231323</td>
+    <td class="tg-lboi">🟡 18484.995409</td>
+    <td class="tg-lboi">🟡 22108.228683</td>
+    <td class="tg-lboi">🟡 3421.928999</td>
+    <td class="tg-0pky">🟡 545.511722</td>
+    <td class="tg-0pky">🟡 39.963135</td>
+    <td class="tg-0pky">🟡 1205.855131</td>
+    <td class="tg-0pky">🟢 21.491489</td>
+  </tr>
+</tbody></table>
 
 <br>
 
-> ***Concurrent implementations achieve orders-of-magnitude speedup for larger n***
+### Concurrent vs Sequential Speedup (Factor Range)
 
+| Implementation              | Speedup Range (min–max) |
+| --------------------------- | ----------------------- |
+| C++ without accumulation    | 0.49× – 2789×           |
+| Python without accumulation | 14.46× – 17762×         |
+| C++ with accumulation       | 0.63× – 744×            |
+| Python with accumulation    | 25.18× – 1205×          |
+
+> Notes:
+> - A factor <1× means the concurrent version was slower than sequential.
+> - Python sees huge gains from concurrency in non-cumulative mode.
+> - C++ gains in concurrent non-cumulative mode are smaller, sometimes <1× for very small n.
+
+<br>
+
+### Cumulative vs Non-cumulative Speedup (Factor Range)
+
+| Implementation | Sequential      | Concurrent     |
+| -------------- | --------------- | -------------- |
+| C++            | 0.089× – 0.838× | 0.718× – 1.46× |
+| Python         | 0.305× – 515×   | 0.634× – 1205× |
+
+> Notes:
+> Factor <1× means cumulative is slower than non-cumulative.
+> Factor >1× means cumulative is faster.
+> In C++ sequential, cumulative is almost always slower.
+> In Python concurrent, cumulative can give large speedups for large n.
+
+<br>
+
+### Why Python Concurrent + Cumulative Is Slower
+
+While the C++ concurrent + cumulative implementation shows significant acceleration,
+the Python version exhibits slower performance in the same configuration.  
+This behavior stems from Python’s **Global Interpreter Lock (GIL)**, which prevents
+multiple threads from executing bytecode simultaneously. As a result, CPU-bound
+tasks like modular arithmetic and arbitrary-precision operations are serialized.
+
+Additionally, cumulative caching introduces shared-memory overhead and locking
+when accessed by multiple threads, further reducing performance.  
+To achieve true concurrency in Python, multiprocessing would be required, but that
+adds inter-process communication overhead and complicates shared caching.
+
+**In short:** Python threads cannot truly parallelize CPU-bound workloads,
+whereas C++ threads execute independently, fully utilizing available CPU cores.
 
 <h2>Changelog</h2>
 
