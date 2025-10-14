@@ -138,6 +138,7 @@ The implementation includes two utility functions for converting between high-pr
 Willans' formula requires computing factorials modulo a number. Instead of calculating the full factorial `j!`, which grows extremely fast, we compute it modulo `i`:
 
 $$
+\Large \displaystyle
 \text{modFact}(j, i) = (1 \cdot 2 \cdot 3 \cdot \cdots \cdot j) \bmod i
 $$
 
@@ -151,12 +152,14 @@ This keeps intermediate numbers manageable while preserving correctness, since o
 For the key term in Willans' formula, we compute:
 
 $$
+\Large \displaystyle
 \text{modFact}(j-1, j) = (1 \cdot 2 \cdot \dots \cdot (j-1)) \bmod j
 $$
 
 Conceptually:
 
 $$
+\Large \displaystyle
 \text{modFact}(j-1, j)
 = 1 \cdot 2 \cdot 3 \cdot \cdots \cdot (j-1) \bmod j
 = ( (1 \bmod j) \cdot (2 \bmod j) \cdot \cdots \cdot ((j-1) \bmod j) ) \bmod j
@@ -207,21 +210,25 @@ def modFact(j: int, i: int) -> int:
 Let us denote the inner sum as:
 
 $$
-\displaystyle \sum_{j=1}^{i} \left\lfloor \left(\cos \frac{(j-1)! + 1}{j} \pi \right)^2 \right\rfloor = \sum_{j=1}^{i} \varphi(j) = \Phi(i) 
+\Large \displaystyle
+\sum_{j=1}^{i} \left\lfloor \left(\cos \frac{(j-1)! + 1}{j} \pi \right)^2 \right\rfloor = \sum_{j=1}^{i} \varphi(j) = \Phi(i) 
 $$
 
 Therefore,
 
 $$
-\displaystyle \sum_{j=1}^{i} \varphi(j) = \sum_{j=1}^{i-1} \varphi(j) + \varphi(i)
+\Large \displaystyle
+\sum_{j=1}^{i} \varphi(j) = \sum_{j=1}^{i-1} \varphi(j) + \varphi(i)
 $$
 
 $$
+\Large \displaystyle
 \iff
 $$
 
 $$
-\displaystyle \Phi(i) = \Phi(i-1) + \varphi(i)
+\Large \displaystyle
+\Phi(i) = \Phi(i-1) + \varphi(i)
 $$
 
 Because $i$ goes from $1$ to $2^n$ in the outer sum, we first compute $\varphi(i-1)$ and then $\varphi(i)$.
@@ -235,26 +242,31 @@ We can avoid recomputations by caching the latest computed value for $\varphi$.
 Let us denote the modular factorial, as:
 
 $$
-\displaystyle j! \bmod i = \Psi(j, i)
+\Large \displaystyle
+j! \bmod i = \Psi(j, i)
 $$
 
 Since
 
 $$
-\displaystyle j! = (j-1)! \cdot j,
+\Large \displaystyle
+j! = (j-1)! \cdot j,
 $$
 
 follows
 
 $$
-\displaystyle j! \bmod i = \left( (j-1)! \bmod i \right) \cdot \left( j \bmod i \right),
+\Large \displaystyle
+j! \bmod i = \left( (j-1)! \bmod i \right) \cdot \left( j \bmod i \right),
 $$
 
 $$
+\Large \displaystyle
 \iff
 $$
 
 $$
+\Large \displaystyle
 \Psi(j,i) = \Psi(j-1, i) \cdot \left( j \bmod i \right)
 $$
 
