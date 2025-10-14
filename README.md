@@ -1,6 +1,6 @@
 # Implementation of Willans’ Formula for the n-th Prime
 
-> This repository implements Willans’ formula — a remarkable mathematical expression that generates the *n*-th prime number.
+> This repository implements Willans’ formula - a remarkable mathematical expression that generates the *n*-th prime number.
 > Implemented in both **Python** (using `mpmath`) and **C++** (using `GMP`/`MPFR`), it demonstrates the use of arbitrary-precision arithmetic, concurrency, and modular optimization.
 
 <h1>Implementation of Willans' formula</h1>
