@@ -867,15 +867,12 @@ whereas C++ threads execute independently, fully utilizing available CPU cores.
 
 <h2>Changelog</h2>
 
-- C++ sequential implementation;
-- C++ concurrent implementation;
-- Python uses `mpmath` for precise floating-point operations.
+- Cumulative functions & caching for the modular factorial and inner sum computations, for both C++ and Python.
 
 
 
 <h2>Soon</h2>
 
-- Memoization.
 - C++ implementation of the formula for CUDA devices.
 - Fortran implementation of the formula.
 - Optimizations via quantum computing using `qiskit` in Python.
